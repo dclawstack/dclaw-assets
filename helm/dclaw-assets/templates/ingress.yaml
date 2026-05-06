@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "dclaw-assets.name" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "dclaw-assets.name" . }}
+spec:
+  rules:
+    - host: dclaw-assets.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "dclaw-assets.name" . }}
+                port:
+                  number: {{ .Values.frontend.service.port }}

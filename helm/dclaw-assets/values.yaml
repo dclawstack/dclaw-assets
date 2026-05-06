@@ -1,0 +1,26 @@
+replicaCount: 1
+
+frontend:
+  image:
+    repository: dclaw-assets-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3045
+  ingress:
+    enabled: false
+
+backend:
+  image:
+    repository: dclaw-assets-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8131
+  env:
+    ASSETS_DATABASE_URL: "postgresql+asyncpg://postgres:postgres@postgres:5432/dclaw_assets"
+
+database:
+  name: dclaw_assets
