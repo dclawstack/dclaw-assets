@@ -1,26 +1,31 @@
-FROM node:20-alpine AS base
+FROM node:20-alpine AS builder
 
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY package.json package-lock.json* ./
-RUN npm install
 
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY package*.json ./
+RUN npm ci
+
 COPY . .
+
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 RUN npm run build
 
-FROM base AS runner
+FROM node:20-alpine AS runner
+
 WORKDIR /app
-ENV NODE_ENV production
+
+ENV NODE_ENV=production
+ENV PORT=3045
+
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
 EXPOSE 3045
-ENV PORT 3045
-ENV HOSTNAME "0.0.0.0"
-ENV PORT=3045
-ENV HOSTNAME="0.0.0.0"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://localhost:3045/ || exit 1
+
 CMD ["node", "server.js"]
