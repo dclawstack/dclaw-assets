@@ -1,9 +1,9 @@
-# PRODUCT-SPEC: CRM
+# PRODUCT-SPEC: Assets
 
 ## Overview
 
-**App Name:** CRM
-**Domain:** Customer Relationship Management
+**App Name:** Assets
+**Domain:** Asset Management
 **Target User:** Sales teams, account managers
 
 ## Core Entities

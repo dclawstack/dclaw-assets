@@ -8,10 +8,10 @@ spec:
   type: {{ .Values.frontend.service.type }}
   ports:
     - port: {{ .Values.frontend.service.port }}
-      targetPort: 3045
+      targetPort: 3043
       name: frontend
     - port: {{ .Values.backend.service.port }}
-      targetPort: 8131
+      targetPort: 8043
       name: backend
   selector:
     app.kubernetes.io/name: {{ include "dclaw-assets.name" . }}
