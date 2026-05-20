@@ -1,45 +1,71 @@
-# DClaw Scaffold
+# DClaw Assets
 
-> **The single source of truth for new DClaw app development.**
-> Clone this repo, rename it, fill in your `PRODUCT-SPEC.md`, and hand it to your coding agents.
+> **Asset Management vertical SaaS built on the DClaw Stack.**
+> FastAPI backend · Next.js 14 frontend · PostgreSQL · Docker · Helm
 
 ## What This Is
 
-This scaffold contains the **complete boilerplate** for any DClaw vertical SaaS app:
-- ✅ FastAPI backend with correct SQLAlchemy 2.0 setup
-- ✅ Next.js 14 frontend with Tailwind + pre-built UI components
-- ✅ Docker + docker-compose with working healthchecks
-- ✅ Helm chart for Kubernetes deployment
-- ✅ Alembic migrations setup
-- ✅ pytest test harness with pinned pytest-asyncio==0.24.0
-- ✅ GitHub Actions CI
-- ✅ `AGENTS.md` + `PLAN-v1.2.md` templates
-- ✅ Pre-built UI components (no shadcn CLI needed)
+**DClaw Assets** is a vertical SaaS application for asset management, built on the DClaw Stack.
 
-## How to Use
+- FastAPI backend with SQLAlchemy 2.0 and Pydantic v2
+- Next.js 14 App Router frontend with Tailwind CSS v3 and pre-built UI components
+- Docker + docker-compose with working healthchecks
+- Helm chart for Kubernetes deployment
+- Alembic migrations setup
+- pytest test harness with pinned pytest-asyncio==0.24.0
+- GitHub Actions CI
+- Pre-built UI components (no shadcn CLI needed)
+
+## Quick Start
 
 ```bash
-# 1. Clone the scaffold
-git clone https://github.com/dclawstack/dclaw-scaffold.git dclaw-YOURAPP
-cd dclaw-YOURAPP
+# 1. Clone
+git clone https://github.com/dclawstack/dclaw-assets.git
+cd dclaw-assets
 
-# 2. Find/replace placeholders
-# {APP_NAME}    -> Your app name (e.g., CRM)
-# {BACKEND_PORT}-> Next free port (see port registry below)
-# {FRONTEND_PORT}-> Next free port
-# {DB_NAME}     -> dclaw_yourapp
+# 2. Configure environment
+cp .env.example .env
+# Edit .env as needed
 
-# 3. Write your PRODUCT-SPEC.md
-# See PRODUCT-SPEC.md.template for the format
+# 3. Start all services
+docker compose up -d
 
-# 4. Hand to your coding agents
-# See SCALING-PLAYBOOK.md for the parallel agent workflow
+# Backend  → http://localhost:8043
+# Frontend → http://localhost:3043
+# API docs → http://localhost:8043/docs
+```
+
+## Ports
+
+| Service | Port |
+|---------|------|
+| Backend (FastAPI) | `8043` |
+| Frontend (Next.js) | `3043` |
+| PostgreSQL | `5432` |
+| Database name | `dclaw_assets` |
+
+## Development
+
+```bash
+# Backend
+cd backend
+pip install -r requirements.txt
+uvicorn app.api.main:app --reload --port 8043
+
+# Frontend
+cd frontend
+npm install
+npm run dev   # http://localhost:3043
+
+# Run backend tests
+cd backend
+pytest -v
 ```
 
 ## Critical Rules for Agents
 
 ### DO NOT install shadcn CLI
-The scaffold includes pre-built UI components in `frontend/src/components/ui/`. Installing `shadcn` v4 or `@base-ui/react` will break the Tailwind v3 build.
+The app includes pre-built UI components in `frontend/src/components/ui/`. Installing `shadcn` v4 or `@base-ui/react` will break the Tailwind v3 build.
 
 ### DO NOT change the Postgres test port
 `backend/tests/conftest.py` uses `localhost:5432`. GitHub Actions CI maps the Postgres service to port 5432. Changing this breaks CI.
@@ -62,26 +88,29 @@ Keep `pytest-asyncio==0.24.0` pinned in `requirements.txt`. v1.3.0 breaks fixtur
 | dclaw-crm | 8095 | 3006 | dclaw_crm |
 | dclaw-finance | 8096 | 3007 | dclaw_finance |
 | dclaw-hr | 8097 | 3008 | dclaw_hr |
-| **TBD #9** | **8098** | **3009** | **dclaw_xxx** |
-| **TBD #10** | **8100** | **3010** | **dclaw_xxx** |
+| dclaw-inventory | 8098 | 3009 | dclaw_inventory |
+| dclaw-project | 8100 | 3010 | dclaw_project |
+| dclaw-support | 8101 | 3014 | dclaw_support |
+| dclaw-marketing | 8102 | 3015 | dclaw_marketing |
+| dclaw-real-estate | 8103 | 3016 | dclaw_real_estate |
+| dclaw-sales | 8104 | 3017 | dclaw_sales |
+| dclaw-recruit | 8105 | 3018 | dclaw_recruit |
+| dclaw-vendor | 8106 | 3019 | dclaw_vendor |
+| dclaw-doc | 8107 | 3020 | dclaw_doc |
+| dclaw-calendar | 8108 | 3021 | dclaw_calendar |
+| **dclaw-assets** | **8043** | **3043** | **dclaw_assets** |
 
-> **Rule:** New apps take the next available port. Update this table when assigning.
+## Key Files
 
-## Files You Must Customize
-
-| File | What to Change |
-|------|---------------|
-| `backend/app/core/config.py` | `app_name`, default database name |
-| `backend/app/api/main.py` | Wire v1 routers |
-| `frontend/package.json` | Package name |
-| `frontend/src/app/layout.tsx` | Title, description |
-| `frontend/src/app/page.tsx` | Dashboard content |
-| `docker-compose.yml` | Port mappings |
-| `helm/Chart.yaml` | Chart name |
-| `helm/values.yaml` | Image repository names |
-| `AGENTS.md` | App identity, port numbers |
-| `PLAN-v1.2.md` | Feature backlog |
-| `PRODUCT-SPEC.md` | (Create this) Domain models, business logic |
+| File | Purpose |
+|------|---------|
+| `AGENTS.md` | Architecture lock, anti-patterns, development workflow |
+| `REVISED-PRD.md` | Product requirements and feature roadmap |
+| `PLAN-v1.2.md` | Feature backlog for coding agents |
+| `PRODUCT-SPEC.md` | Domain models and API contracts |
+| `backend/app/core/config.py` | App settings, database URL |
+| `docker-compose.yml` | Port mappings and service orchestration |
+| `helm/` | Kubernetes deployment charts |
 
 ## What You Should NOT Change
 
@@ -90,6 +119,12 @@ Keep `pytest-asyncio==0.24.0` pinned in `requirements.txt`. v1.3.0 breaks fixtur
 - `docker-compose.yml` healthcheck commands
 - `frontend/Dockerfile` `ARG NEXT_PUBLIC_API_URL` pattern
 - `tests/conftest.py` — Test DB override pattern (keep `localhost:5432`)
-- `frontend/src/components/ui/*.tsx` — Pre-built components (use as-is)
+- `frontend/src/components/ui/*.tsx` — Pre-built UI components (use as-is)
 - `requirements.txt` — Keep `pytest-asyncio==0.24.0` pinned
 - `.github/workflows/ci.yml` — Do not delete
+
+## Contributors
+
+| Name | Email |
+|------|-------|
+| Rajendra Machani | 01.r.machani@gmail.com |
