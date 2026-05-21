@@ -1,122 +1,154 @@
-# PRODUCT-SPEC: Assets
+# PRODUCT-SPEC: DClaw Assets
 
 ## Overview
 
-**App Name:** Assets
-**Domain:** Asset Management
-**Target User:** Sales teams, account managers
+**App Name:** DClaw Assets
+**Domain:** IT Asset Management
+**Target User:** IT managers, operations teams, CFOs at 50–5000 employee companies
 
 ## Core Entities
 
-### Customer
+### Asset
 ```
-Customer
+Asset
 ├── id: UUID (PK)
 ├── name: str (required)
-├── email: str (unique, required)
-├── phone: str (optional)
-├── company: str (optional)
-├── status: enum ["lead", "active", "churned"] (default: "lead")
+├── asset_tag: str (unique, e.g. "ASSET-001")
+├── serial_number: str (optional)
+├── asset_type: enum ["hardware", "software", "license", "other"]
+├── status: enum ["active", "inactive", "maintenance", "disposed", "lost"]
+├── category_id: UUID (FK → AssetCategory, SET NULL)
+├── location_id: UUID (FK → Location, SET NULL)
+├── assigned_to: str (optional — employee name or email)
+├── purchase_date: date (optional)
+├── purchase_price: float (optional)
+├── warranty_expiry: date (optional)
 ├── notes: str (optional)
 ├── created_at: datetime
 └── updated_at: datetime
 ```
 
-### Deal
+### AssetCategory
 ```
-Deal
+AssetCategory
 ├── id: UUID (PK)
-├── customer_id: UUID (FK → Customer, ondelete=CASCADE)
-├── title: str (required)
-├── value: float (required, default 0)
-├── stage: enum ["prospecting", "qualification", "proposal", "negotiation", "closed_won", "closed_lost"] (default: "prospecting")
-├── probability: int (0-100, default 0)
-├── expected_close_date: date (optional)
-├── created_at: datetime
-└── updated_at: datetime
+├── name: str (unique, required)
+├── description: str (optional)
+├── color: str (hex color, default "#10B981")
+└── created_at: datetime
 ```
 
-### Activity
+### Location
 ```
-Activity
+Location
 ├── id: UUID (PK)
-├── deal_id: UUID (FK → Deal, ondelete=CASCADE, optional)
-├── customer_id: UUID (FK → Customer, ondelete=CASCADE)
-├── activity_type: enum ["call", "email", "meeting", "note"] (required)
+├── name: str (required)
+├── address: str (optional)
+├── building: str (optional)
+├── floor: str (optional)
+├── room: str (optional)
+└── created_at: datetime
+```
+
+### Assignment
+```
+Assignment
+├── id: UUID (PK)
+├── asset_id: UUID (FK → Asset, ondelete=CASCADE)
+├── assigned_to_name: str (required)
+├── assigned_to_email: str (optional)
+├── assigned_at: datetime
+├── returned_at: datetime (optional — NULL means currently assigned)
+├── notes: str (optional)
+└── created_at: datetime
+```
+
+### MaintenanceRecord
+```
+MaintenanceRecord
+├── id: UUID (PK)
+├── asset_id: UUID (FK → Asset, ondelete=CASCADE)
+├── maintenance_type: enum ["repair", "upgrade", "inspection", "cleaning", "other"]
 ├── description: str (required)
-├── scheduled_at: datetime (optional)
-├── completed: bool (default false)
-├── created_at: datetime
-└── updated_at: datetime
+├── performed_by: str (optional)
+├── cost: float (optional)
+├── performed_at: datetime
+└── created_at: datetime
 ```
 
 ## User Stories / Screens
 
 ### Screen 1: Dashboard
-- Summary cards: total customers, open deals, total pipeline value, win rate
-- Recent activities feed
-- Deals by stage bar chart
-- Quick action buttons (add customer, add deal, log activity)
+- KPI cards: Total Assets, Active, Under Maintenance, Warranty Expiring (30 days)
+- Recent additions table (last 10 assets)
+- Assets by type breakdown
+- Quick action buttons: Add Asset, View Expiring, Export
 
-### Screen 2: Customers
-- Table view with pagination, search by name/email/company
-- Status filter (lead/active/churned)
-- Bulk delete
-- "Add Customer" modal/form
+### Screen 2: Asset List
+- Table: asset_tag, name, type badge, status badge, location, assigned_to, warranty_expiry
+- Search by name / tag / serial
+- Filter by status, type, category
+- Paginated (20 per page)
+- "Add Asset" opens dialog form
+- Row click → Asset Detail
 
-### Screen 3: Customer Detail
-- Customer info card with edit/delete
-- Related deals list
-- Related activities timeline
-- Add deal / add activity buttons
+### Screen 3: Asset Detail
+- Asset info card with edit / delete
+- Current assignment banner (assigned to / unassigned)
+- Assignment history timeline
+- Maintenance records list
+- Depreciation card (if purchase_price + purchase_date set)
 
-### Screen 4: Deals
-- Kanban board view by stage (prospecting → closed_won/lost)
-- Table view toggle
-- Search and filter by customer, stage, value
-- "Add Deal" form with customer dropdown
+### Screen 4: Categories & Locations
+- Manage taxonomies — create/edit/delete categories and locations
+- Color-coded category badges
 
-### Screen 5: Deal Detail
-- Deal info with edit/delete
-- Probability slider
-- Related activities
-- Move stage buttons
+### Screen 5: Reports (Phase 2)
+- Warranty expiring report
+- License utilization report
+- Depreciation summary
+- Assignment history audit
 
-### Screen 6: Activities
-- Timeline view of all activities
-- Filter by type, customer, deal
-- Mark complete / incomplete
-
-## AI Features
-
-- **Deal sentiment analysis:** Analyze customer emails/notes for positive/negative sentiment
-- **Next best action:** Recommend next activity based on deal stage and last contact
-- **Win probability prediction:** Use deal attributes to suggest probability score
-
-## API Endpoints (v1.0)
+## API Endpoints
 
 ```
-GET    /api/v1/customers          → List customers
-POST   /api/v1/customers          → Create customer
-GET    /api/v1/customers/{id}     → Get customer
-PUT    /api/v1/customers/{id}     → Update customer
-DELETE /api/v1/customers/{id}     → Delete customer
-GET    /api/v1/deals              → List deals
-POST   /api/v1/deals              → Create deal
-GET    /api/v1/deals/{id}         → Get deal
-PUT    /api/v1/deals/{id}         → Update deal
-DELETE /api/v1/deals/{id}         → Delete deal
-GET    /api/v1/activities         → List activities
-POST   /api/v1/activities         → Create activity
-GET    /api/v1/activities/{id}    → Get activity
-PUT    /api/v1/activities/{id}    → Update activity
-DELETE /api/v1/activities/{id}    → Delete activity
-GET    /api/v1/dashboard          → Dashboard stats
+GET    /health/                           → Health check
+
+GET    /api/v1/assets                     → List assets (filter, search, paginate)
+POST   /api/v1/assets                     → Create asset
+GET    /api/v1/assets/stats               → Dashboard stats
+GET    /api/v1/assets/expiring            → Assets with warranty expiring soon
+GET    /api/v1/assets/{id}               → Get asset detail
+PUT    /api/v1/assets/{id}               → Update asset
+DELETE /api/v1/assets/{id}              → Delete asset (soft: set disposed)
+GET    /api/v1/assets/{id}/assignments   → Assignment history
+POST   /api/v1/assets/{id}/assign        → Assign asset to person
+POST   /api/v1/assets/{id}/return        → Return/unassign asset
+GET    /api/v1/assets/{id}/maintenance   → Maintenance history
+POST   /api/v1/assets/{id}/maintenance   → Log maintenance event
+GET    /api/v1/assets/{id}/depreciation  → Calculate depreciation
+GET    /api/v1/assets/{id}/qr            → QR code image
+
+GET    /api/v1/categories                → List categories
+POST   /api/v1/categories                → Create category
+PUT    /api/v1/categories/{id}           → Update category
+DELETE /api/v1/categories/{id}           → Delete category
+
+GET    /api/v1/locations                 → List locations
+POST   /api/v1/locations                 → Create location
+PUT    /api/v1/locations/{id}            → Update location
+DELETE /api/v1/locations/{id}            → Delete location
+
+GET    /api/v1/dashboard                 → Full dashboard stats
+
+POST   /api/v1/copilot/chat              → AI Copilot (Phase 3)
 ```
 
 ## Non-Functional Requirements
 
-- Backend tests: 70%+ coverage
-- Frontend: Responsive, Tailwind + shadcn/ui
+- Backend tests: 80%+ coverage on business logic
+- Frontend: Responsive (mobile-friendly table), Tailwind + pre-built UI components
 - Docker: All services start with `docker compose up -d`
 - No mock data — everything persisted to PostgreSQL
+- All models use `Mapped[...]` + `mapped_column()` from SQLAlchemy 2.0
+- UUID primary keys with `default=uuid.uuid4`

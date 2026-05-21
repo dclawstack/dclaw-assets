@@ -9,6 +9,7 @@ from alembic import context
 
 from app.core.config import settings
 from app.models.base import Base
+import app.models  # noqa: F401 — ensures all models are registered with Base.metadata
 
 # this is the Alembic Config object
 config = context.config

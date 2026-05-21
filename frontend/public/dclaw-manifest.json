@@ -1,0 +1,19 @@
+{
+  "app_id": "assets",
+  "name": "DClaw Assets",
+  "tagline": "Hardware & software asset management",
+  "category": "IT",
+  "color": "#10B981",
+  "version": "1.0.0",
+  "backend_port": 8043,
+  "frontend_port": 3043,
+  "database": "dclaw_assets",
+  "health_endpoint": "/health/",
+  "api_base": "/api/v1",
+  "routes": [
+    { "path": "/", "label": "Dashboard" },
+    { "path": "/assets", "label": "Assets" },
+    { "path": "/categories", "label": "Categories" },
+    { "path": "/locations", "label": "Locations" }
+  ]
+}
