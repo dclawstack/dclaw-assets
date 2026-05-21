@@ -120,6 +120,22 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Warranty expiry alert banner */}
+      {s.warranty_expiring_30_days > 0 && (
+        <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>
+              <strong>{s.warranty_expiring_30_days} asset{s.warranty_expiring_30_days !== 1 ? "s" : ""}</strong>{" "}
+              {s.warranty_expiring_30_days !== 1 ? "have" : "has"} warranty expiring within 30 days
+            </span>
+          </div>
+          <Link href="/assets?status=active" className="text-xs font-medium underline underline-offset-2 hover:text-amber-900">
+            View →
+          </Link>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>

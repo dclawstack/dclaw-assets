@@ -1,3 +1,4 @@
+import io
 import pytest
 
 
@@ -215,3 +216,172 @@ async def test_depreciation_missing_fields(client):
     asset_id = create.json()["id"]
     response = await client.get(f"/api/v1/assets/{asset_id}/depreciation")
     assert response.status_code == 422
+
+
+# ── Export ──────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_export_csv_empty(client):
+    response = await client.get("/api/v1/assets/export")
+    assert response.status_code == 200
+    assert "text/csv" in response.headers["content-type"]
+    lines = response.text.strip().splitlines()
+    assert len(lines) == 1  # header only
+    assert "asset_tag" in lines[0]
+
+
+@pytest.mark.asyncio
+async def test_export_csv_with_data(client):
+    await client.post("/api/v1/assets/", json={
+        "name": "Export Test", "asset_tag": "EXP-001", "asset_type": "hardware", "status": "active"
+    })
+    response = await client.get("/api/v1/assets/export")
+    assert response.status_code == 200
+    lines = response.text.strip().splitlines()
+    assert len(lines) == 2  # header + 1 asset
+    assert "EXP-001" in lines[1]
+    assert "Export Test" in lines[1]
+
+
+# ── Import ──────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_import_csv_success(client):
+    csv_content = (
+        "asset_tag,name,serial_number,asset_type,status,assigned_to,"
+        "purchase_date,purchase_price,warranty_expiry,notes\n"
+        "IMP-001,Imported Laptop,,hardware,active,,,,,\n"
+        "IMP-002,Imported License,,license,active,,,,,\n"
+    )
+    files = {"file": ("assets.csv", io.BytesIO(csv_content.encode()), "text/csv")}
+    response = await client.post("/api/v1/assets/import", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["created"] == 2
+    assert data["skipped"] == 0
+    assert data["errors"] == []
+
+
+@pytest.mark.asyncio
+async def test_import_csv_duplicate_tag(client):
+    await client.post("/api/v1/assets/", json={
+        "name": "Existing", "asset_tag": "DUP-IMP-001", "asset_type": "hardware"
+    })
+    csv_content = (
+        "asset_tag,name,asset_type\n"
+        "DUP-IMP-001,Duplicate,hardware\n"
+        "NEW-IMP-001,New Asset,hardware\n"
+    )
+    files = {"file": ("assets.csv", io.BytesIO(csv_content.encode()), "text/csv")}
+    response = await client.post("/api/v1/assets/import", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["created"] == 1
+    assert data["skipped"] == 1
+    assert len(data["errors"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_import_csv_invalid_file_type(client):
+    files = {"file": ("data.txt", io.BytesIO(b"not a csv"), "text/plain")}
+    response = await client.post("/api/v1/assets/import", files=files)
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_import_csv_missing_required_fields(client):
+    csv_content = "asset_tag,name\n,Missing Name\nMissing Tag,\n"
+    files = {"file": ("assets.csv", io.BytesIO(csv_content.encode()), "text/csv")}
+    response = await client.post("/api/v1/assets/import", files=files)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["created"] == 0
+    assert data["skipped"] == 2
+
+
+# ── Refresh Predictions ──────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_refresh_predictions_empty(client):
+    response = await client.get("/api/v1/assets/refresh-predictions")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.asyncio
+async def test_refresh_predictions_with_hardware(client):
+    await client.post("/api/v1/assets/", json={
+        "name": "Old Server", "asset_tag": "SRV-OLD", "asset_type": "hardware",
+        "purchase_date": "2019-01-01",
+    })
+    await client.post("/api/v1/assets/", json={
+        "name": "New Laptop", "asset_tag": "LAP-NEW", "asset_type": "hardware",
+        "purchase_date": "2024-01-01",
+    })
+    # non-hardware should not appear
+    await client.post("/api/v1/assets/", json={
+        "name": "Some Software", "asset_tag": "SW-001", "asset_type": "software",
+    })
+    response = await client.get("/api/v1/assets/refresh-predictions")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert all("refresh_score" in item for item in data)
+    assert all("reasons" in item for item in data)
+    # Old server should have a higher refresh score than the new laptop
+    old_score = next(i["refresh_score"] for i in data if i["asset_tag"] == "SRV-OLD")
+    new_score = next(i["refresh_score"] for i in data if i["asset_tag"] == "LAP-NEW")
+    assert old_score > new_score
+
+
+# ── License Waste ────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_license_waste_unassigned(client):
+    await client.post("/api/v1/assets/", json={
+        "name": "Unused License", "asset_tag": "LIC-UNUSED", "asset_type": "license"
+    })
+    response = await client.get("/api/v1/assets/license-waste?threshold=100")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["asset_tag"] == "LIC-UNUSED"
+    assert data[0]["utilization_pct"] == 0
+    assert data[0]["is_assigned"] is False
+
+
+@pytest.mark.asyncio
+async def test_license_waste_excludes_assigned(client):
+    create = await client.post("/api/v1/assets/", json={
+        "name": "Assigned License", "asset_tag": "LIC-ASGN", "asset_type": "license"
+    })
+    asset_id = create.json()["id"]
+    await client.post(f"/api/v1/assets/{asset_id}/assign", json={
+        "assigned_to_name": "User One"
+    })
+    # threshold=50 means show assets < 50% utilization; assigned = 100%, so excluded
+    response = await client.get("/api/v1/assets/license-waste?threshold=50")
+    assert response.status_code == 200
+    data = response.json()
+    assert all(item["asset_tag"] != "LIC-ASGN" for item in data)
+
+
+# ── QR Code ──────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_qr_code(client):
+    create = await client.post("/api/v1/assets/", json={
+        "name": "QR Asset", "asset_tag": "QR-001", "asset_type": "hardware"
+    })
+    asset_id = create.json()["id"]
+    response = await client.get(f"/api/v1/assets/{asset_id}/qr")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "image/png"
+    # PNG magic bytes: \x89PNG
+    assert response.content[:4] == b"\x89PNG"
+
+
+@pytest.mark.asyncio
+async def test_qr_code_not_found(client):
+    response = await client.get("/api/v1/assets/00000000-0000-0000-0000-000000000000/qr")
+    assert response.status_code == 404

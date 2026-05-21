@@ -45,237 +45,165 @@ Competitors (ServiceNow, Freshservice, Snipe-IT) are expensive, slow to deploy, 
 
 ---
 
-## Complexity 0 — Low Complexity / Core Foundation (Quick Wins)
+## Complexity 0 — Low Complexity / Core Foundation ✅ COMPLETE
 
-> Implement these first. Each item should be completable in isolation.
+> All Complexity 0 items implemented in Phase 1 (PR #2).
 
 ### 0.1 Core Domain Models + Alembic Migration
-**Why:** Nothing works without a schema. These are the foundation for all other features.
-- **Entities:**
-  - `Asset` — id, name, asset_tag, serial_number, asset_type (hardware/software/license/other), status (active/inactive/maintenance/disposed/lost), category_id (FK), location_id (FK), assigned_to (str, employee name/email), purchase_date, purchase_price, warranty_expiry, notes, created_at, updated_at
-  - `AssetCategory` — id, name, description, color, created_at
-  - `Location` — id, name, address, building, floor, room, created_at
-  - `Assignment` — id, asset_id (FK→Asset CASCADE), assigned_to_name, assigned_to_email, assigned_at, returned_at (nullable), notes, created_at
-- **Backend:** `app/models/asset.py`, `app/models/category.py`, `app/models/location.py`, `app/models/assignment.py`
-- **Alembic:** `alembic revision --autogenerate -m "initial_asset_schema"`
-- **Files:** `backend/app/models/`, `backend/alembic/versions/`
-- **Status:** [ ]
+- **Status:** [x] ✅ Done — `app/models/asset.py`, `category.py`, `location.py`; migration `c70aa8acc9c9`
 
 ### 0.2 Asset CRUD API
-**Why:** The core read/write loop every other feature depends on.
-- **Endpoints:**
-  ```
-  GET    /api/v1/assets              → list with filter/search/pagination
-  POST   /api/v1/assets              → create asset
-  GET    /api/v1/assets/{id}         → get asset + category + location
-  PUT    /api/v1/assets/{id}         → update asset
-  DELETE /api/v1/assets/{id}         → soft-delete (set status=disposed)
-  GET    /api/v1/assets/stats        → dashboard stats (counts by type/status)
-  ```
-- **Backend:** `app/schemas/asset.py`, `app/repositories/asset_repo.py`, `app/api/v1/assets.py`
-- **Tests:** `tests/test_assets.py` — CRUD + stats + filter
-- **Status:** [ ]
+- **Status:** [x] ✅ Done — `app/api/v1/assets.py`; full CRUD + stats + search/filter/pagination; 16 tests
 
 ### 0.3 AssetCategory + Location CRUD APIs
-**Why:** Assets need classification and location; these are supporting tables.
-- **Endpoints:** Full CRUD for `/api/v1/categories` and `/api/v1/locations`
-- **Backend:** schemas, repos, routers for both
-- **Tests:** `tests/test_categories.py`, `tests/test_locations.py`
-- **Status:** [ ]
+- **Status:** [x] ✅ Done — `app/api/v1/categories.py`, `locations.py`; 5+4 tests each
 
 ### 0.4 Dashboard Stats Endpoint
-**Why:** The first thing any user sees; drives the "wow" moment in a demo.
-- **Endpoint:** `GET /api/v1/dashboard` → total assets, by-type counts, by-status counts, warranty expiring in 30 days, recently added
-- **Backend:** `app/api/v1/dashboard.py` — aggregate queries
-- **Status:** [ ]
+- **Status:** [x] ✅ Done — `GET /api/v1/dashboard/`; totals by type/status, warranty expiring, recent assets
 
 ### 0.5 Health Endpoint + dclaw-manifest.json
-**Why:** Required for DPanel registration and CI health gate.
-- `GET /health/` already exists — verify it returns `{"status":"ok"}`
-- Create `frontend/public/dclaw-manifest.json` with app metadata
-- **Status:** [ ]
+- **Status:** [x] ✅ Done — `/health/` returns `{"status":"ok"}`; `frontend/public/dclaw-manifest.json` created
 
 ### 0.6 Frontend: Dashboard Page (Stats + Quick Actions)
-**Why:** First impression. Replaces broken placeholder.
-- Stat cards: Total Assets, Active, Under Maintenance, Warranty Expiring Soon
-- Recent additions table (last 10 assets)
-- Quick action buttons: Add Asset, Add Category, Add Location
-- Calls `/api/v1/dashboard` and `/api/v1/assets`
-- **Frontend:** Update `app/page.tsx` to be the real dashboard
-- **Status:** [ ]
+- **Status:** [x] ✅ Done — `app/page.tsx`; 7 KPI cards, recent assets table, warranty alert banner
 
 ### 0.7 Frontend: Asset List Page
-**Why:** Core data view. Table with search, status filter, type filter.
-- Table: asset_tag, name, type, status badge, location, assigned_to, warranty_expiry
-- Search by name/tag/serial
-- Filter by status, type, category
-- Paginated
-- "Add Asset" opens dialog form
-- **Frontend:** `app/assets/page.tsx`
-- **Status:** [ ]
+- **Status:** [x] ✅ Done — `app/assets/page.tsx`; table with search/filter/pagination + Export/Import buttons
 
 ### 0.8 Frontend: Add/Edit Asset Form
-**Why:** Data entry. Dialog form with all fields, category/location dropdowns.
-- Controlled form with validation
-- Category and Location loaded from API
-- Status badge selector (color-coded)
-- **Frontend:** `components/AssetForm.tsx` (dialog-based)
-- **Status:** [ ]
+- **Status:** [x] ✅ Done — `components/AssetForm.tsx`; all fields, category/location dropdowns
 
 ### 0.9 PRODUCT-SPEC.md Update
-**Why:** It still has CRM entities (Customer, Deal, Activity) — wrong domain.
-- Rewrite with Asset Management entities: Asset, AssetCategory, Location, Assignment
-- Update API endpoint list
-- Update user stories
-- **Status:** [ ]
+- **Status:** [x] ✅ Done — rewritten with correct Asset Management entities
 
 ---
 
-## Complexity 1 — Medium Complexity / Core Differentiators
-
-> These make the app genuinely useful and sticky.
+## Complexity 1 — Medium Complexity / Core Differentiators ✅ COMPLETE
 
 ### 1.1 Assignment History & Tracking
 **Why:** Every asset needs a chain of custody. Required for audit and compliance.
-- Track every time an asset is assigned/returned with timestamp and notes
-- `GET /api/v1/assets/{id}/assignments` — full assignment history
-- `POST /api/v1/assets/{id}/assign` — assign to person
-- `POST /api/v1/assets/{id}/return` — mark returned
-- Frontend: Assignment history timeline on asset detail page
-- **Status:** [ ]
+- Backend: `POST /api/v1/assets/{id}/assign`, `POST /api/v1/assets/{id}/return`, `GET /api/v1/assets/{id}/assignments`
+- Frontend: Assignment timeline on asset detail page
+- **Status:** [x] ✅ Done — backend + tests (Phase 1); frontend in asset detail page (1.2)
 
 ### 1.2 Asset Detail Page
 **Why:** Deep dive view. All asset info + assignment history + maintenance log.
-- Asset info card with edit/delete
-- Assignment history timeline
-- Maintenance records
-- Warranty status banner
-- **Frontend:** `app/assets/[id]/page.tsx`
-- **Status:** [ ]
+- `app/assets/[id]/page.tsx` — asset info, assignment timeline, maintenance log, depreciation, edit/delete
+- **Status:** [x] ✅ Done — full detail page with warranty banner, assignment/return form, depreciation card, maintenance log
 
 ### 1.3 Category & Location Management Pages
 **Why:** Admin pages for organizing the inventory taxonomy.
-- CRUD pages for categories (with color picker) and locations (with building/floor/room)
-- **Frontend:** `app/categories/page.tsx`, `app/locations/page.tsx`
-- **Status:** [ ]
+- `app/categories/page.tsx`, `app/locations/page.tsx` with full inline CRUD + color picker
+- **Status:** [x] ✅ Done — both pages implemented in Phase 1
 
 ### 1.4 Warranty & Expiry Alerts
 **Why:** The #1 complaint from IT managers — they miss warranty expirations.
-- Dashboard banner: "N assets warranty-expiring in 30 days"
-- `GET /api/v1/assets/expiring?days=30` endpoint
-- Color-coded badges: green (>90 days), yellow (30-90), red (<30)
-- **Status:** [ ]
+- Backend: `GET /api/v1/assets/expiring?days=30`
+- Frontend: alert banner on dashboard, color-coded badges in asset list, WarrantyBanner on detail page
+- **Status:** [x] ✅ Done — backend + dashboard banner + asset list column + detail page banner
 
 ### 1.5 Bulk Import via CSV
 **Why:** New customers can't manually enter 500 assets. CSV import = fast onboarding.
-- `POST /api/v1/assets/import` — accept CSV, parse, bulk insert
-- Return import summary: success count, error rows
-- Frontend: upload modal with sample CSV download
-- **Status:** [ ]
+- `POST /api/v1/assets/import` — parse CSV, bulk insert, return summary
+- Frontend: upload modal with sample CSV download, created/skipped/error reporting
+- **Status:** [x] ✅ Done — backend + 4 tests + frontend import modal
 
 ### 1.6 Asset Export
-**Why:** IT managers need Excel exports for audits and reports.
-- `GET /api/v1/assets/export?format=csv` — stream CSV
-- Include all fields + current assignment
-- **Status:** [ ]
+**Why:** IT managers need CSV exports for audits and reports.
+- `GET /api/v1/assets/export` — stream CSV with all fields + current assignment
+- Frontend: "Export CSV" download button on asset list page
+- **Status:** [x] ✅ Done — backend + 2 tests + frontend export button
 
 ### 1.7 Maintenance Records
 **Why:** Service history is required for insurance and lifecycle decisions.
-- `MaintenanceRecord` model: asset_id, type (repair/upgrade/inspection), description, performed_by, cost, performed_at
-- `GET /api/v1/assets/{id}/maintenance` — maintenance history
-- `POST /api/v1/assets/{id}/maintenance` — log maintenance event
-- **Status:** [ ]
+- Backend: `GET/POST /api/v1/assets/{id}/maintenance`
+- Frontend: maintenance log on asset detail page
+- **Status:** [x] ✅ Done — backend + tests (Phase 1); frontend in detail page (1.2)
 
 ### 1.8 Depreciation Calculator
 **Why:** CFOs demand asset book value for financial reporting.
-- `GET /api/v1/assets/{id}/depreciation` — straight-line calculation
-- Fields: purchase_price, purchase_date, useful_life_years → current book value
-- Batch depreciation report for all assets
-- **Status:** [ ]
+- Backend: `GET /api/v1/assets/{id}/depreciation`
+- Frontend: depreciation card on asset detail page
+- **Status:** [x] ✅ Done — backend + tests (Phase 1); frontend in detail page (1.2)
 
 ### 1.9 Navigation Shell + Layout
 **Why:** App shell with sidebar navigation connecting all pages.
-- Sidebar: Dashboard, Assets, Categories, Locations, Assignments, Reports
-- Breadcrumbs, active state, mobile responsive
-- **Frontend:** `app/layout.tsx` update with sidebar component
-- **Status:** [ ]
+- `components/Sidebar.tsx` + updated `app/layout.tsx`
+- **Status:** [x] ✅ Done — sidebar with active state, responsive
 
 ---
 
 ## Complexity 2 — High Complexity / AI & Advanced Features
 
-> These create the moat. Start only after Complexity 0 and 1 are complete.
+> These create the moat.
 
 ### 2.1 AI Asset Copilot (Core YC Differentiator)
-**Why:** The single biggest differentiator vs. every competitor. "Your IT inventory, explained by AI."
-- Floating chat widget on all pages
-- Context-aware: knows your asset counts, expiry dates, maintenance history
-- Answers: "How many MacBooks do we have?", "Which licenses expire this month?", "Who has the oldest laptop?"
-- Backend: `POST /api/v1/copilot/chat` — LLM with system context from DB
-- Uses Ollama (local) → OpenRouter (cloud fallback)
-- **Backend:** `app/services/ai_copilot.py`, `app/api/v1/copilot.py`
-- **Frontend:** `components/AICopilot.tsx` (floating bottom-right)
-- **Status:** [ ]
+**Why:** The single biggest differentiator. "Your IT inventory, explained by AI."
+- Floating chat widget on all pages; context-aware (knows your counts, expiry, maintenance)
+- `POST /api/v1/copilot/chat` — LLM with DB-injected system context
+- Ollama local → OpenRouter cloud fallback
+- `app/services/ai_copilot.py`, `app/api/v1/copilot.py`, `components/AICopilot.tsx`
+- **Status:** [x] ✅ Done — full backend service + API + floating chat widget in layout
 
 ### 2.2 Predictive Refresh Scoring
-**Why:** "Predict which laptops will fail before they fail." — Instant demo wow moment.
-- Score each hardware asset 1-100 for refresh urgency
-- Factors: age (vs. 3-year standard), warranty status, maintenance frequency, purchase price
-- `GET /api/v1/assets/refresh-predictions` — sorted by urgency score
-- Frontend: Refresh Priority table with urgency badge
-- **Status:** [ ]
+**Why:** "Predict which laptops will fail before they fail."
+- Score 0-100 per hardware asset: age (50pts), warranty status (30pts), repair count (20pts)
+- `GET /api/v1/assets/refresh-predictions` — sorted by urgency
+- Tests: 2 tests covering empty + scored results
+- **Status:** [x] ✅ Done — backend + tests; [ ] ⏳ Frontend Refresh Priority page TODO
 
 ### 2.3 License Utilization & Waste Detection
 **Why:** Average company wastes 30% of SaaS budget on unused licenses.
-- Track license seat count vs. active assignments
-- Utilization % = assigned / total_seats
-- `GET /api/v1/assets/license-waste` → licenses <50% utilized
-- Frontend: License Optimization dashboard card
-- **Status:** [ ]
+- Track seat count vs. active assignments; utilization % calculation
+- `GET /api/v1/assets/license-waste?threshold=50`
+- Tests: 2 tests covering unassigned detection + assigned exclusion
+- **Status:** [x] ✅ Done — backend + tests; [ ] ⏳ Frontend License Optimization card TODO
 
 ### 2.4 Automated Compliance Report (SOX/ISO)
 **Why:** Compliance reports take weeks manually. Automate → sell to finance teams.
-- Generate PDF/JSON report: all assets, assignments, maintenance, disposals
-- Date-range filter for audit period
 - `GET /api/v1/reports/compliance?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- **Status:** [ ]
+- JSON report: all assets, assignments, maintenance, disposals in period
+- **Status:** [ ] ⏳ TODO
 
 ### 2.5 Procurement Workflow
-**Why:** Closes the loop from "need laptop" to "laptop assigned" without leaving the app.
-- `PurchaseRequest` model: requested_by, asset_type, justification, budget, status (pending/approved/ordered/received)
-- Approval workflow: pending → approved → ordered → received → asset auto-created
-- `POST /api/v1/procurement/requests` → create request
-- `PUT /api/v1/procurement/requests/{id}/approve` → approve
-- **Status:** [ ]
+**Why:** Closes the loop from "need laptop" to "laptop assigned."
+- `PurchaseRequest` model + approval workflow (pending → approved → ordered → received)
+- `app/models/procurement.py`, `app/api/v1/procurement.py`
+- **Status:** [ ] ⏳ TODO
 
 ### 2.6 QR Code Generation
-**Why:** Physical asset labeling. Print a QR, scan with phone → instant asset lookup.
-- `GET /api/v1/assets/{id}/qr` → return QR code image (PNG)
-- Links to asset detail page URL
-- **Status:** [ ]
+**Why:** Physical asset labeling. Print a QR, scan → instant asset lookup.
+- `GET /api/v1/assets/{id}/qr` → PNG image; 2 tests
+- **Status:** [x] ✅ Done — backend + 2 tests; [ ] ⏳ QR button on asset detail page TODO
 
 ---
 
 ## Implementation Order
 
 ```
-Phase 1 (This Sprint — Complexity 0):
-  0.9 → 0.1 → 0.2 → 0.3 → 0.4 → 0.5 → 0.6 → 0.7 → 0.8
-
-Phase 2 (Complexity 1):
-  1.9 → 1.1 → 1.2 → 1.3 → 1.4 → 1.7 → 1.5 → 1.6 → 1.8
-
-Phase 3 (Complexity 2 — after stable Phase 1+2):
-  2.1 → 2.2 → 2.3 → 2.6 → 2.4 → 2.5
+Phase 1 ✅ COMPLETE — Complexity 0 (all 9 items)
+Phase 2 ✅ COMPLETE — Complexity 1 (all 9 items: 1.1-1.9)
+Phase 3 🔄 IN PROGRESS — Complexity 2: 2.1 ✅, 2.2 ✅ (backend), 2.3 ✅ (backend), 2.6 ✅ (backend)
+Phase 4 ⏳ NEXT — Complexity 2 remaining: 2.2/2.3/2.6 frontend, 2.4 compliance, 2.5 procurement
 ```
+
+---
+
+## Test Status
+
+- **Total tests:** 38/38 passing
+- `test_assets.py` — 28 tests (CRUD, assign/return, maintenance, depreciation, export, import, refresh-predictions, license-waste, QR)
+- `test_categories.py` — 5 tests
+- `test_health.py` — 1 test
+- `test_locations.py` — 4 tests
 
 ---
 
 ## Definition of Done (per feature)
 
-- [ ] Backend: model + schema + repository + router wired in `main.py`
-- [ ] Alembic migration generated and tested
-- [ ] Tests written and passing (`pytest -v`)
-- [ ] Frontend: page/component calls real API (no mock data)
-- [ ] No TypeScript `any` without comment
-- [ ] `docker compose config` passes
+- [x] Backend: model + schema + repository + router wired in `main.py`
+- [x] Alembic migration generated and tested
+- [x] Tests written and passing (`pytest -v` — currently 38/38)
+- [x] Frontend: all pages call real API (no mock data)
+- [x] No TypeScript `any` without comment
+- [x] `docker compose config` passes
