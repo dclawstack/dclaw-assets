@@ -18,7 +18,7 @@ async def test_compliance_report_empty_range(client):
 @pytest.mark.asyncio
 async def test_compliance_report_with_data(client):
     # Create asset
-    create_r = await client.post("/api/v1/assets/", json={
+    create_r = await client.post("/api/v1/assets", json={
         "name": "Compliance Asset", "asset_tag": "COMP-001", "asset_type": "hardware", "status": "active"
     })
     asset_id = create_r.json()["id"]

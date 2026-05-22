@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_create_location(client):
-    response = await client.post("/api/v1/locations/", json={
+    response = await client.post("/api/v1/locations", json={
         "name": "HQ - Floor 2",
         "building": "Main",
         "floor": "2",
@@ -17,16 +17,16 @@ async def test_create_location(client):
 
 @pytest.mark.asyncio
 async def test_list_locations(client):
-    await client.post("/api/v1/locations/", json={"name": "Loc A"})
-    await client.post("/api/v1/locations/", json={"name": "Loc B"})
-    response = await client.get("/api/v1/locations/")
+    await client.post("/api/v1/locations", json={"name": "Loc A"})
+    await client.post("/api/v1/locations", json={"name": "Loc B"})
+    response = await client.get("/api/v1/locations")
     assert response.status_code == 200
     assert len(response.json()) == 2
 
 
 @pytest.mark.asyncio
 async def test_update_location(client):
-    create = await client.post("/api/v1/locations/", json={"name": "Old Loc"})
+    create = await client.post("/api/v1/locations", json={"name": "Old Loc"})
     loc_id = create.json()["id"]
     response = await client.put(f"/api/v1/locations/{loc_id}", json={"name": "New Loc", "floor": "3"})
     assert response.status_code == 200
@@ -36,7 +36,7 @@ async def test_update_location(client):
 
 @pytest.mark.asyncio
 async def test_delete_location(client):
-    create = await client.post("/api/v1/locations/", json={"name": "ToDelete"})
+    create = await client.post("/api/v1/locations", json={"name": "ToDelete"})
     loc_id = create.json()["id"]
     response = await client.delete(f"/api/v1/locations/{loc_id}")
     assert response.status_code == 204

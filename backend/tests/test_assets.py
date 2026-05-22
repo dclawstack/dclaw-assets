@@ -4,7 +4,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_create_asset(client):
-    response = await client.post("/api/v1/assets/", json={
+    response = await client.post("/api/v1/assets", json={
         "name": "MacBook Pro M3",
         "asset_tag": "ASSET-001",
         "asset_type": "hardware",
@@ -22,14 +22,14 @@ async def test_create_asset(client):
 @pytest.mark.asyncio
 async def test_create_asset_duplicate_tag(client):
     payload = {"name": "Laptop A", "asset_tag": "DUP-001", "asset_type": "hardware"}
-    await client.post("/api/v1/assets/", json=payload)
-    response = await client.post("/api/v1/assets/", json=payload)
+    await client.post("/api/v1/assets", json=payload)
+    response = await client.post("/api/v1/assets", json=payload)
     assert response.status_code == 409
 
 
 @pytest.mark.asyncio
 async def test_list_assets_empty(client):
-    response = await client.get("/api/v1/assets/")
+    response = await client.get("/api/v1/assets")
     assert response.status_code == 200
     data = response.json()
     assert data["items"] == []
@@ -39,25 +39,25 @@ async def test_list_assets_empty(client):
 @pytest.mark.asyncio
 async def test_list_assets_with_data(client):
     for i in range(3):
-        await client.post("/api/v1/assets/", json={
+        await client.post("/api/v1/assets", json={
             "name": f"Asset {i}",
             "asset_tag": f"TAG-{i:03d}",
             "asset_type": "hardware",
         })
-    response = await client.get("/api/v1/assets/")
+    response = await client.get("/api/v1/assets")
     assert response.status_code == 200
     assert response.json()["total"] == 3
 
 
 @pytest.mark.asyncio
 async def test_list_assets_search(client):
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Dell Monitor", "asset_tag": "MON-001", "asset_type": "hardware"
     })
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Adobe License", "asset_tag": "LIC-001", "asset_type": "license"
     })
-    response = await client.get("/api/v1/assets/?search=dell")
+    response = await client.get("/api/v1/assets?search=dell")
     assert response.status_code == 200
     data = response.json()
     assert data["total"] == 1
@@ -66,20 +66,20 @@ async def test_list_assets_search(client):
 
 @pytest.mark.asyncio
 async def test_list_assets_filter_type(client):
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "MacBook", "asset_tag": "HW-001", "asset_type": "hardware"
     })
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Zoom License", "asset_tag": "LIC-002", "asset_type": "license"
     })
-    response = await client.get("/api/v1/assets/?asset_type=license")
+    response = await client.get("/api/v1/assets?asset_type=license")
     assert response.status_code == 200
     assert response.json()["total"] == 1
 
 
 @pytest.mark.asyncio
 async def test_get_asset(client):
-    create = await client.post("/api/v1/assets/", json={
+    create = await client.post("/api/v1/assets", json={
         "name": "iPad", "asset_tag": "IPAD-001", "asset_type": "hardware"
     })
     asset_id = create.json()["id"]
@@ -96,7 +96,7 @@ async def test_get_asset_not_found(client):
 
 @pytest.mark.asyncio
 async def test_update_asset(client):
-    create = await client.post("/api/v1/assets/", json={
+    create = await client.post("/api/v1/assets", json={
         "name": "Old Name", "asset_tag": "UPD-001", "asset_type": "hardware"
     })
     asset_id = create.json()["id"]
@@ -107,7 +107,7 @@ async def test_update_asset(client):
 
 @pytest.mark.asyncio
 async def test_delete_asset(client):
-    create = await client.post("/api/v1/assets/", json={
+    create = await client.post("/api/v1/assets", json={
         "name": "ToDelete", "asset_tag": "DEL-001", "asset_type": "hardware"
     })
     asset_id = create.json()["id"]
@@ -129,10 +129,10 @@ async def test_stats_empty(client):
 
 @pytest.mark.asyncio
 async def test_stats_with_data(client):
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Server", "asset_tag": "SRV-001", "asset_type": "hardware", "status": "active"
     })
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Windows License", "asset_tag": "WIN-001", "asset_type": "license", "status": "active"
     })
     response = await client.get("/api/v1/assets/stats")
@@ -145,7 +145,7 @@ async def test_stats_with_data(client):
 
 @pytest.mark.asyncio
 async def test_assign_and_return_asset(client):
-    create = await client.post("/api/v1/assets/", json={
+    create = await client.post("/api/v1/assets", json={
         "name": "Laptop", "asset_tag": "LAP-001", "asset_type": "hardware"
     })
     asset_id = create.json()["id"]
@@ -170,7 +170,7 @@ async def test_assign_and_return_asset(client):
 
 @pytest.mark.asyncio
 async def test_maintenance_log(client):
-    create = await client.post("/api/v1/assets/", json={
+    create = await client.post("/api/v1/assets", json={
         "name": "Printer", "asset_tag": "PRT-001", "asset_type": "hardware"
     })
     asset_id = create.json()["id"]
@@ -191,7 +191,7 @@ async def test_maintenance_log(client):
 
 @pytest.mark.asyncio
 async def test_depreciation(client):
-    create = await client.post("/api/v1/assets/", json={
+    create = await client.post("/api/v1/assets", json={
         "name": "Server Rack",
         "asset_tag": "RACK-001",
         "asset_type": "hardware",
@@ -210,7 +210,7 @@ async def test_depreciation(client):
 
 @pytest.mark.asyncio
 async def test_depreciation_missing_fields(client):
-    create = await client.post("/api/v1/assets/", json={
+    create = await client.post("/api/v1/assets", json={
         "name": "No Price", "asset_tag": "NP-001", "asset_type": "software"
     })
     asset_id = create.json()["id"]
@@ -232,7 +232,7 @@ async def test_export_csv_empty(client):
 
 @pytest.mark.asyncio
 async def test_export_csv_with_data(client):
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Export Test", "asset_tag": "EXP-001", "asset_type": "hardware", "status": "active"
     })
     response = await client.get("/api/v1/assets/export")
@@ -264,7 +264,7 @@ async def test_import_csv_success(client):
 
 @pytest.mark.asyncio
 async def test_import_csv_duplicate_tag(client):
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Existing", "asset_tag": "DUP-IMP-001", "asset_type": "hardware"
     })
     csv_content = (
@@ -310,16 +310,16 @@ async def test_refresh_predictions_empty(client):
 
 @pytest.mark.asyncio
 async def test_refresh_predictions_with_hardware(client):
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Old Server", "asset_tag": "SRV-OLD", "asset_type": "hardware",
         "purchase_date": "2019-01-01",
     })
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "New Laptop", "asset_tag": "LAP-NEW", "asset_type": "hardware",
         "purchase_date": "2024-01-01",
     })
     # non-hardware should not appear
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Some Software", "asset_tag": "SW-001", "asset_type": "software",
     })
     response = await client.get("/api/v1/assets/refresh-predictions")
@@ -338,7 +338,7 @@ async def test_refresh_predictions_with_hardware(client):
 
 @pytest.mark.asyncio
 async def test_license_waste_unassigned(client):
-    await client.post("/api/v1/assets/", json={
+    await client.post("/api/v1/assets", json={
         "name": "Unused License", "asset_tag": "LIC-UNUSED", "asset_type": "license"
     })
     response = await client.get("/api/v1/assets/license-waste?threshold=100")
@@ -352,7 +352,7 @@ async def test_license_waste_unassigned(client):
 
 @pytest.mark.asyncio
 async def test_license_waste_excludes_assigned(client):
-    create = await client.post("/api/v1/assets/", json={
+    create = await client.post("/api/v1/assets", json={
         "name": "Assigned License", "asset_tag": "LIC-ASGN", "asset_type": "license"
     })
     asset_id = create.json()["id"]
@@ -370,7 +370,7 @@ async def test_license_waste_excludes_assigned(client):
 
 @pytest.mark.asyncio
 async def test_qr_code(client):
-    create = await client.post("/api/v1/assets/", json={
+    create = await client.post("/api/v1/assets", json={
         "name": "QR Asset", "asset_tag": "QR-001", "asset_type": "hardware"
     })
     asset_id = create.json()["id"]

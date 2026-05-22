@@ -3,7 +3,7 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_create_purchase_request(client):
-    response = await client.post("/api/v1/procurement/", json={
+    response = await client.post("/api/v1/procurement", json={
         "title": "MacBook Pro M3",
         "requested_by": "Alice Smith",
         "quantity": 2,
@@ -18,37 +18,37 @@ async def test_create_purchase_request(client):
 
 @pytest.mark.asyncio
 async def test_list_purchase_requests(client):
-    await client.post("/api/v1/procurement/", json={
+    await client.post("/api/v1/procurement", json={
         "title": "Req A", "requested_by": "Bob"
     })
-    await client.post("/api/v1/procurement/", json={
+    await client.post("/api/v1/procurement", json={
         "title": "Req B", "requested_by": "Carol"
     })
-    response = await client.get("/api/v1/procurement/")
+    response = await client.get("/api/v1/procurement")
     assert response.status_code == 200
     assert len(response.json()) == 2
 
 
 @pytest.mark.asyncio
 async def test_list_purchase_requests_filter_status(client):
-    create_r = await client.post("/api/v1/procurement/", json={
+    create_r = await client.post("/api/v1/procurement", json={
         "title": "Req A", "requested_by": "Bob"
     })
     pr_id = create_r.json()["id"]
     # Approve it
     await client.post(f"/api/v1/procurement/{pr_id}/transition", json={"new_status": "approved"})
 
-    await client.post("/api/v1/procurement/", json={"title": "Req B", "requested_by": "Carol"})
+    await client.post("/api/v1/procurement", json={"title": "Req B", "requested_by": "Carol"})
 
-    approved = await client.get("/api/v1/procurement/?status=approved")
+    approved = await client.get("/api/v1/procurement?status=approved")
     assert len(approved.json()) == 1
-    pending = await client.get("/api/v1/procurement/?status=pending")
+    pending = await client.get("/api/v1/procurement?status=pending")
     assert len(pending.json()) == 1
 
 
 @pytest.mark.asyncio
 async def test_get_purchase_request(client):
-    create_r = await client.post("/api/v1/procurement/", json={
+    create_r = await client.post("/api/v1/procurement", json={
         "title": "Single PR", "requested_by": "Dave"
     })
     pr_id = create_r.json()["id"]
@@ -65,7 +65,7 @@ async def test_get_purchase_request_not_found(client):
 
 @pytest.mark.asyncio
 async def test_transition_pending_to_approved(client):
-    create_r = await client.post("/api/v1/procurement/", json={
+    create_r = await client.post("/api/v1/procurement", json={
         "title": "Transition Test", "requested_by": "Eve"
     })
     pr_id = create_r.json()["id"]
@@ -78,7 +78,7 @@ async def test_transition_pending_to_approved(client):
 
 @pytest.mark.asyncio
 async def test_transition_full_workflow(client):
-    create_r = await client.post("/api/v1/procurement/", json={
+    create_r = await client.post("/api/v1/procurement", json={
         "title": "Full Workflow", "requested_by": "Frank"
     })
     pr_id = create_r.json()["id"]
@@ -96,7 +96,7 @@ async def test_transition_full_workflow(client):
 
 @pytest.mark.asyncio
 async def test_invalid_transition(client):
-    create_r = await client.post("/api/v1/procurement/", json={
+    create_r = await client.post("/api/v1/procurement", json={
         "title": "Bad Transition", "requested_by": "Grace"
     })
     pr_id = create_r.json()["id"]
@@ -109,7 +109,7 @@ async def test_invalid_transition(client):
 
 @pytest.mark.asyncio
 async def test_cancel_purchase_request(client):
-    create_r = await client.post("/api/v1/procurement/", json={
+    create_r = await client.post("/api/v1/procurement", json={
         "title": "To Cancel", "requested_by": "Henry"
     })
     pr_id = create_r.json()["id"]
@@ -122,7 +122,7 @@ async def test_cancel_purchase_request(client):
 
 @pytest.mark.asyncio
 async def test_update_purchase_request(client):
-    create_r = await client.post("/api/v1/procurement/", json={
+    create_r = await client.post("/api/v1/procurement", json={
         "title": "Old Title", "requested_by": "Iris"
     })
     pr_id = create_r.json()["id"]
@@ -133,7 +133,7 @@ async def test_update_purchase_request(client):
 
 @pytest.mark.asyncio
 async def test_delete_purchase_request(client):
-    create_r = await client.post("/api/v1/procurement/", json={
+    create_r = await client.post("/api/v1/procurement", json={
         "title": "To Delete", "requested_by": "Jack"
     })
     pr_id = create_r.json()["id"]
