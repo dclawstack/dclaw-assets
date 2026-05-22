@@ -11,6 +11,7 @@ import {
   getDepreciation,
   assignAsset,
   returnAsset,
+  getQrCodeUrl,
   type Asset,
   type Assignment,
   type MaintenanceRecord,
@@ -24,7 +25,7 @@ import { Label } from "@/components/ui/label";
 import AssetForm from "@/components/AssetForm";
 import {
   ArrowLeft, Pencil, Trash2, User, Wrench, TrendingDown,
-  CheckCircle2, Clock, AlertTriangle, Package,
+  CheckCircle2, Clock, AlertTriangle, Package, QrCode,
 } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -125,8 +126,12 @@ export default function AssetDetailPage() {
 
   async function handleDelete() {
     if (!confirm(`Delete asset "${asset?.name}"? This cannot be undone.`)) return;
-    await deleteAsset(id);
-    router.push("/assets");
+    try {
+      await deleteAsset(id);
+      router.push("/assets");
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Failed to delete asset");
+    }
   }
 
   async function handleAssign(e: React.FormEvent) {
@@ -139,6 +144,8 @@ export default function AssetDetailPage() {
       setAssignName("");
       setAssignEmail("");
       loadAll(id);
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Failed to assign asset");
     } finally {
       setAssignLoading(false);
     }
@@ -146,8 +153,12 @@ export default function AssetDetailPage() {
 
   async function handleReturn() {
     if (!confirm("Mark this asset as returned?")) return;
-    await returnAsset(id);
-    loadAll(id);
+    try {
+      await returnAsset(id);
+      loadAll(id);
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Failed to return asset");
+    }
   }
 
   if (loading) return <div className="flex items-center justify-center h-64 text-slate-400">Loading…</div>;
@@ -187,6 +198,11 @@ export default function AssetDetailPage() {
           </div>
         </div>
         <div className="flex gap-2">
+          <a href={getQrCodeUrl(id)} download={`qr-${asset.asset_tag}.png`} title="Download QR code">
+            <Button variant="outline" size="sm" className="gap-1">
+              <QrCode className="w-3.5 h-3.5" /> QR
+            </Button>
+          </a>
           <Button variant="outline" size="sm" onClick={() => setEditing(true)} className="gap-1">
             <Pencil className="w-3.5 h-3.5" /> Edit
           </Button>

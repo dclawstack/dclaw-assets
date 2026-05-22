@@ -8,6 +8,9 @@ import {
   Package,
   Tag,
   MapPin,
+  ShoppingCart,
+  RefreshCw,
+  FileText,
 } from "lucide-react";
 
 const nav = [
@@ -15,6 +18,9 @@ const nav = [
   { href: "/assets", label: "Assets", icon: Package },
   { href: "/categories", label: "Categories", icon: Tag },
   { href: "/locations", label: "Locations", icon: MapPin },
+  { href: "/refresh-predictions", label: "Refresh Score", icon: RefreshCw },
+  { href: "/procurement", label: "Procurement", icon: ShoppingCart },
+  { href: "/reports", label: "Reports", icon: FileText },
 ];
 
 export default function Sidebar() {
