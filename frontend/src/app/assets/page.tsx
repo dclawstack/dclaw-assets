@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { listAssets, deleteAsset, importAssets, getExportUrl, type Asset, type ImportResult } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -44,7 +44,7 @@ export default function AssetsPage() {
   const PAGE_SIZE = 20;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await listAssets({
@@ -59,11 +59,11 @@ export default function AssetsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [page, search, statusFilter, typeFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     load();
-  }, [page, search, statusFilter, typeFilter]); // eslint-disable-line
+  }, [load]);
 
   function openAdd() {
     setEditAsset(undefined);
@@ -77,8 +77,12 @@ export default function AssetsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this asset?")) return;
-    await deleteAsset(id);
-    load();
+    try {
+      await deleteAsset(id);
+      load();
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : "Failed to delete asset");
+    }
   }
 
   function handleSaved(_asset: Asset) {

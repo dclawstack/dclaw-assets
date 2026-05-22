@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import init_db
 from app.api.routes import health
-from app.api.v1 import assets, categories, locations, dashboard, copilot
+from app.api.v1 import assets, categories, locations, dashboard, copilot, reports, procurement
 
 
 @asynccontextmanager
@@ -34,3 +34,5 @@ app.include_router(categories.router, prefix="/api/v1/categories", tags=["catego
 app.include_router(locations.router, prefix="/api/v1/locations", tags=["locations"])
 app.include_router(dashboard.router, prefix="/api/v1/dashboard", tags=["dashboard"])
 app.include_router(copilot.router, prefix="/api/v1/copilot", tags=["copilot"])
+app.include_router(reports.router, prefix="/api/v1/reports", tags=["reports"])
+app.include_router(procurement.router, prefix="/api/v1/procurement", tags=["procurement"])

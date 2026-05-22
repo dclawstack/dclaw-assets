@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import AsyncGenerator
-
 import httpx
 
 from app.core.config import settings
@@ -21,7 +19,7 @@ If asked something outside of IT asset management, politely redirect to asset-re
 Today's date: {today}."""
 
 
-async def _call_ollama(messages: list[dict], stream: bool = False) -> str:
+async def _call_ollama(messages: list[dict]) -> str:
     """Call local Ollama API."""
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(

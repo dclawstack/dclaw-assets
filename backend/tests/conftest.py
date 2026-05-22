@@ -7,7 +7,7 @@ from sqlalchemy.pool import NullPool
 from app.api.main import app
 from app.core.database import get_db
 from app.models.base import Base
-from app.models import AssetCategory, Location, Asset, Assignment, MaintenanceRecord  # noqa: F401
+from app.models import AssetCategory, Location, Asset, Assignment, MaintenanceRecord, PurchaseRequest  # noqa: F401
 
 TEST_DATABASE_URL = os.environ.get(
     "DATABASE_URL",

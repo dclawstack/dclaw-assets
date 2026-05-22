@@ -47,8 +47,8 @@ export default function AssetForm({ asset, onSaved, onCancel }: Props) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    listCategories().then(setCategories).catch(() => {});
-    listLocations().then(setLocations).catch(() => {});
+    listCategories().then(setCategories).catch(() => setError("Could not load categories"));
+    listLocations().then(setLocations).catch(() => setError("Could not load locations"));
   }, []);
 
   function set(field: string, value: string) {

@@ -3,14 +3,17 @@ import io
 import uuid
 from datetime import date
 from typing import Optional
+from urllib.parse import urlparse
 
 import qrcode
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response, StreamingResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.utils import utc_now
+from app.models.asset import MaintenanceRecord
 from app.repositories.asset_repo import (
     AssetRepository,
     AssignmentRepository,
@@ -57,6 +60,18 @@ async def get_refresh_predictions(db: AsyncSession = Depends(get_db)):
     repo = AssetRepository(db)
     items, _ = await repo.list_assets(limit=1000, asset_type="hardware")
     today = date.today()
+
+    # Batch-fetch all maintenance records for these assets in one query (avoids N+1)
+    asset_ids = [a.id for a in items]
+    maint_result = await db.execute(
+        select(MaintenanceRecord).where(MaintenanceRecord.asset_id.in_(asset_ids))
+    )
+    all_records = maint_result.scalars().all()
+    repairs_by_asset: dict[uuid.UUID, int] = {}
+    for r in all_records:
+        if r.maintenance_type == "repair":
+            repairs_by_asset[r.asset_id] = repairs_by_asset.get(r.asset_id, 0) + 1
+
     results = []
     for asset in items:
         score = 0
@@ -84,9 +99,7 @@ async def get_refresh_predictions(db: AsyncSession = Depends(get_db)):
             reasons.append("No warranty info")
 
         # Maintenance count component (0-20 pts): >3 repairs = flag
-        maint_repo = MaintenanceRepository(db)
-        records = await maint_repo.get_by_asset(asset.id)
-        repair_count = sum(1 for r in records if r.maintenance_type == "repair")
+        repair_count = repairs_by_asset.get(asset.id, 0)
         if repair_count >= 3:
             score += 20
             reasons.append(f"{repair_count} repairs logged")
@@ -459,6 +472,9 @@ async def get_qr_code(
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
 
+    parsed = urlparse(base_url)
+    if parsed.scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail="base_url must use http or https")
     url = f"{base_url.rstrip('/')}/assets/{asset_id}"
     img = qrcode.make(url)
     buf = io.BytesIO()
