@@ -209,6 +209,28 @@ export async function getDepreciation(id: string, useful_life_years = 3): Promis
   );
 }
 
+export function getExportUrl(): string {
+  return `${API_BASE}/api/v1/assets/export`;
+}
+
+export interface ImportResult {
+  created: number;
+  skipped: number;
+  errors: { row: number; reason: string }[];
+}
+
+export async function importAssets(file: File): Promise<ImportResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const url = `${API_BASE}/api/v1/assets/import`;
+  const response = await fetch(url, { method: "POST", body: form });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new ApiError(`API error ${response.status}: ${error}`, response.status);
+  }
+  return response.json();
+}
+
 // ── Categories ─────────────────────────────────────────────────────────────
 
 export async function listCategories(): Promise<Category[]> {
@@ -249,6 +271,20 @@ export async function updateLocation(id: string, data: Partial<Location>): Promi
 
 export async function deleteLocation(id: string): Promise<void> {
   await fetchJson<void>(`/api/v1/locations/${id}`, { method: "DELETE" });
+}
+
+// ── AI Copilot ─────────────────────────────────────────────────────────────
+
+export interface CopilotResponse {
+  reply: string;
+  context_summary: string;
+}
+
+export async function copilotChat(message: string): Promise<CopilotResponse> {
+  return fetchJson<CopilotResponse>("/api/v1/copilot/chat", {
+    method: "POST",
+    body: JSON.stringify({ message }),
+  });
 }
 
 export { ApiError };

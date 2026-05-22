@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { listAssets, deleteAsset, type Asset } from "@/lib/api";
+import { listAssets, deleteAsset, importAssets, getExportUrl, type Asset, type ImportResult } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import AssetForm from "@/components/AssetForm";
-import { Plus, Search, Trash2, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, ChevronLeft, ChevronRight, Download, Upload, CheckCircle2, AlertTriangle } from "lucide-react";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "bg-emerald-100 text-emerald-800",
@@ -35,6 +34,12 @@ export default function AssetsPage() {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editAsset, setEditAsset] = useState<Asset | undefined>();
+
+  // Import state
+  const [showImport, setShowImport] = useState(false);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const PAGE_SIZE = 20;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -81,6 +86,21 @@ export default function AssetsPage() {
     load();
   }
 
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportLoading(true);
+    setImportResult(null);
+    try {
+      const result = await importAssets(file);
+      setImportResult(result);
+      if (result.created > 0) load();
+    } finally {
+      setImportLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -88,9 +108,19 @@ export default function AssetsPage() {
           <h1 className="text-2xl font-bold text-slate-900">Assets</h1>
           <p className="text-sm text-slate-500 mt-0.5">{total} total</p>
         </div>
-        <Button onClick={openAdd} className="gap-2">
-          <Plus className="w-4 h-4" /> Add Asset
-        </Button>
+        <div className="flex gap-2">
+          <a href={getExportUrl()} download="assets.csv">
+            <Button variant="outline" className="gap-2">
+              <Download className="w-4 h-4" /> Export CSV
+            </Button>
+          </a>
+          <Button variant="outline" className="gap-2" onClick={() => { setShowImport(true); setImportResult(null); }}>
+            <Upload className="w-4 h-4" /> Import CSV
+          </Button>
+          <Button onClick={openAdd} className="gap-2">
+            <Plus className="w-4 h-4" /> Add Asset
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -233,6 +263,76 @@ export default function AssetsPage() {
               onSaved={handleSaved}
               onCancel={() => setShowForm(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Import CSV Modal */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold mb-1">Import Assets from CSV</h2>
+            <p className="text-sm text-slate-500 mb-4">
+              Upload a CSV with headers:{" "}
+              <span className="font-mono text-xs bg-slate-100 px-1 rounded">
+                asset_tag, name, asset_type, status, serial_number, assigned_to, purchase_date, purchase_price, warranty_expiry, notes
+              </span>
+            </p>
+
+            <div className="mb-4">
+              <a
+                href={`data:text/csv;charset=utf-8,asset_tag,name,serial_number,asset_type,status,assigned_to,purchase_date,purchase_price,warranty_expiry,notes%0AASSET-001,Sample Laptop,SN12345,hardware,active,,2023-01-15,1200,,`}
+                download="sample_assets.csv"
+                className="text-sm text-emerald-600 hover:underline"
+              >
+                Download sample CSV
+              </a>
+            </div>
+
+            {!importResult ? (
+              <div className="space-y-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleImport}
+                  disabled={importLoading}
+                  className="block w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                />
+                {importLoading && <p className="text-sm text-slate-400">Importing…</p>}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className={`flex items-center gap-2 p-3 rounded-lg text-sm ${importResult.created > 0 ? "bg-emerald-50 text-emerald-800" : "bg-slate-50 text-slate-600"}`}>
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span><strong>{importResult.created}</strong> asset{importResult.created !== 1 ? "s" : ""} imported</span>
+                </div>
+                {importResult.skipped > 0 && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 text-amber-800 text-sm">
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                    <span><strong>{importResult.skipped}</strong> row{importResult.skipped !== 1 ? "s" : ""} skipped</span>
+                  </div>
+                )}
+                {importResult.errors.length > 0 && (
+                  <div className="bg-slate-50 rounded-lg p-3 text-xs text-slate-600 max-h-32 overflow-y-auto space-y-1">
+                    {importResult.errors.map((e, i) => (
+                      <div key={i}>Row {e.row}: {e.reason}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 mt-5">
+              <Button variant="outline" onClick={() => { setShowImport(false); setImportResult(null); }}>
+                {importResult ? "Close" : "Cancel"}
+              </Button>
+              {importResult && (
+                <Button variant="outline" onClick={() => { setImportResult(null); }}>
+                  Import Another
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       )}
