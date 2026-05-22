@@ -8,14 +8,14 @@ from app.schemas.category import CategoryCreate, CategoryUpdate, CategoryRead
 router = APIRouter()
 
 
-@router.get("/", response_model=list[CategoryRead])
+@router.get("", response_model=list[CategoryRead])
 async def list_categories(db: AsyncSession = Depends(get_db)):
     repo = CategoryRepository(db)
     items, _ = await repo.list_all(limit=200)
     return items
 
 
-@router.post("/", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
 async def create_category(data: CategoryCreate, db: AsyncSession = Depends(get_db)):
     repo = CategoryRepository(db)
     existing = await repo.get_by_name(data.name)

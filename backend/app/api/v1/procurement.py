@@ -62,7 +62,7 @@ def _pr_to_dict(pr: PurchaseRequest) -> dict:
     }
 
 
-@router.get("/")
+@router.get("")
 async def list_purchase_requests(
     status_filter: Optional[str] = Query(None, alias="status"),
     db: AsyncSession = Depends(get_db),
@@ -75,7 +75,7 @@ async def list_purchase_requests(
     return [_pr_to_dict(pr) for pr in items]
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_purchase_request(
     data: PurchaseRequestCreate, db: AsyncSession = Depends(get_db)
 ):

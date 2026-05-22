@@ -8,14 +8,14 @@ from app.schemas.location import LocationCreate, LocationUpdate, LocationRead
 router = APIRouter()
 
 
-@router.get("/", response_model=list[LocationRead])
+@router.get("", response_model=list[LocationRead])
 async def list_locations(db: AsyncSession = Depends(get_db)):
     repo = LocationRepository(db)
     items, _ = await repo.list_all(limit=200)
     return items
 
 
-@router.post("/", response_model=LocationRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=LocationRead, status_code=status.HTTP_201_CREATED)
 async def create_location(data: LocationCreate, db: AsyncSession = Depends(get_db)):
     repo = LocationRepository(db)
     return await repo.create_location(data)

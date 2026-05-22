@@ -367,4 +367,12 @@ export async function copilotChat(message: string): Promise<CopilotResponse> {
   });
 }
 
+// ── Seed / Clear ───────────────────────────────────────────────────────────
+
+export const seedData = () =>
+  fetchJson<{ seeded: Record<string, number> }>("/api/v1/seed", { method: "POST" });
+
+export const clearData = () =>
+  fetchJson<{ cleared: boolean }>("/api/v1/seed", { method: "DELETE" });
+
 export { ApiError };

@@ -284,7 +284,7 @@ async def import_assets(
 
 # ── Per-asset endpoints ─────────────────────────────────────────────────────
 
-@router.get("/", response_model=AssetListResponse)
+@router.get("", response_model=AssetListResponse)
 async def list_assets(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -307,7 +307,7 @@ async def list_assets(
     return AssetListResponse(items=items, total=total, page=page, page_size=page_size)
 
 
-@router.post("/", response_model=AssetRead, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=AssetRead, status_code=status.HTTP_201_CREATED)
 async def create_asset(data: AssetCreate, db: AsyncSession = Depends(get_db)):
     repo = AssetRepository(db)
     if await repo.get_asset_tag_exists(data.asset_tag):
