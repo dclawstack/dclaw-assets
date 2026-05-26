@@ -1,0 +1,27 @@
+# Cloud / production overrides. Use with:
+#   helm install dclaw-assets ./helm -n <ns> -f values-prod.yaml
+
+backend:
+  image:
+    repository: ghcr.io/dclawstack/dclaw-assets-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+frontend:
+  image:
+    repository: ghcr.io/dclawstack/dclaw-assets-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  host: assets.dclawstack.io
+  tls:
+    - secretName: dclaw-assets-tls
+      hosts:
+        - assets.dclawstack.io

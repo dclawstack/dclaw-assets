@@ -1,38 +1,85 @@
-replicaCount: 1
+# Default values = DEV / local cluster. Reproduces the live dclaw-core deployment.
+# Plain `helm install dclaw-assets ./helm -n dclaw-core` brings the app up.
+# For the cloud/GHCR deployment, override with: -f values-prod.yaml
 
-image:
-  backend:
-    repository: ghcr.io/dclawstack/dclaw-assets-backend
-    tag: latest
-    pullPolicy: IfNotPresent
-  frontend:
-    repository: ghcr.io/dclawstack/dclaw-assets-frontend
-    tag: latest
-    pullPolicy: IfNotPresent
+nameOverride: ""
 
-service:
-  backend:
+backend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: docker.io/library/dclaw-assets-backend
+    tag: local
+    pullPolicy: Never
+  containerPort: 8043
+  service:
     type: ClusterIP
-    port: 8000
-  frontend:
-    type: ClusterIP
-    port: 3000
+    port: 8043
+  env:
+    OTEL_SERVICE_NAME: dclaw-assets
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://clickstack-otel-collector.observability.svc.cluster.local:4318
+    OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+    OTEL_RESOURCE_ATTRIBUTES: k8s.namespace.name=dclaw-core,deployment.environment=production
+    OTEL_TRACES_EXPORTER: otlp
+    OTEL_METRICS_EXPORTER: otlp
+    OTEL_LOGS_EXPORTER: otlp
+  livenessProbe:
+    path: /health
+    initialDelaySeconds: 15
+    periodSeconds: 30
+  readinessProbe:
+    path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 10
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: docker.io/library/dclaw-assets-frontend
+    tag: local
+    pullPolicy: Never
+  containerPort: 3043
+  service:
+    type: NodePort
+    port: 3043
+    nodePort: 30043
+  env:
+    OTEL_SERVICE_NAME: dclaw-assets-frontend
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://clickstack-otel-collector.observability.svc.cluster.local:4318
+    OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+    OTEL_RESOURCE_ATTRIBUTES: k8s.namespace.name=dclaw-core,deployment.environment=production
+    OTEL_TRACES_EXPORTER: otlp
+    OTEL_METRICS_EXPORTER: otlp
+    OTEL_LOGS_EXPORTER: otlp
+  readinessProbe:
+    path: /
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+secret:
+  name: ""
+  data:
+    DATABASE_URL: postgresql+asyncpg://postgres:postgres@dclaw-shared-postgres:5432/dclaw_assets
+    APP_NAME: DClaw Assets
 
 ingress:
   enabled: false
-  className: ""
+  className: nginx
   annotations: {}
-  hosts: []
+  host: ""
   tls: []
-
-resources: {}
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 5
-  targetCPUUtilizationPercentage: 80
-
-nodeSelector: {}
-tolerations: []
-affinity: {}

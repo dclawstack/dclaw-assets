@@ -1,4 +1,0 @@
-DClaw Assets deployed!
-
-Frontend: http://dclaw-assets.local
-Backend API: http://dclaw-assets-backend:8131
